@@ -1,0 +1,67 @@
+#include <Servo.h>
+#define MODO 2
+
+Servo miServo1;
+Servo miServo2;
+int angServo = 0;
+int angAux = 0;
+volatile bool mode = true;
+
+void setup() {
+  miServo1.attach(3);
+  miServo2.attach(5);
+  miServo1.write(angServo);  // Posición inicial conocida
+  miServo2.write(angServo);  // Posición inicial conocida
+  delay(500);         // Le das tiempo a estabilizarse
+  Serial.begin(9600);
+  pinMode(MODO,INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(MODO), move, FALLING);
+}
+
+void loop() {
+  while(mode){
+    int suma = 0;
+    for (int i = 0; i < 5; i++) {
+      suma += analogRead(A0);
+      delay(2);
+    }
+    angServo = map(suma / 5, 0, 1023, 0, 180);
+    angServo = constrain(angServo, 0, 180);  // Limita entre 0 y 180 sí o sí
+    miServo1.write(angServo);
+    miServo2.write(angServo);
+    delay(10);
+  }
+
+  angAux = angServo;
+  while(!mode){
+    if(angAux != 0){
+      for(int i = angAux; i >= 0; i--){
+        miServo1.write(i);
+        miServo2.write(i);
+        delay(10);
+      }
+      angAux = 0;
+    }
+    for(int i = 0; i <= 180; i++){
+      miServo1.write(i);
+      miServo2.write(i);
+      delay(10);
+    }
+    for(int i = 180; i >= 0; i--){
+      miServo1.write(i);
+      miServo2.write(i);
+      delay(10);
+    }
+    if(mode){
+      for(int i = 0; i <= angServo; i++){
+        miServo1.write(i);
+        miServo2.write(i);
+        delay(10);
+      }
+    }
+  }
+}
+
+void move(){
+  mode = !mode;
+}
